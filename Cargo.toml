@@ -1,0 +1,9 @@
+[package]
+name = "effects"
+version = "0.1.0"
+edition = "2021"
+license = "Unlicense"
+description = "Old school demo effects"
+
+[dependencies]
+minifb = "0.28.0"
