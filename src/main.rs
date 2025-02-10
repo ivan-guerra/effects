@@ -1,3 +1,26 @@
+//! Command-line demo effects renderer with configurable display options
+//!
+//! This module provides the main entry point and CLI interface for running
+//! various demo scene effects.
+//!
+//! # Usage
+//!
+//! ```bash
+//! effects [OPTIONS] <COMMAND>
+//!
+//! Commands:
+//!   plasma    Run a plasma effect with configurable shape and palette
+//!   help      Print help information
+//!
+//! Options:
+//!   -w, --width <WIDTH>    Screen width in pixels [default: 1366]
+//!   -h, --height <HEIGHT>  Screen height in pixels [default: 768]
+//!   -v, --version          Print version information
+//! ```
+//!
+//! The application runs in a window and can be closed by pressing ESC.
+//! Each effect has its own set of configuration options accessible via
+//! subcommands.
 use crate::common::DemoEffect;
 use crate::effects::plasma;
 use clap::{Args, Parser, Subcommand};
@@ -7,6 +30,7 @@ use std::time::Instant;
 mod common;
 mod effects;
 
+#[doc(hidden)]
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 #[command(propagate_version = true)]
@@ -21,11 +45,13 @@ struct Cli {
     height: usize,
 }
 
+#[doc(hidden)]
 #[derive(Subcommand)]
 enum Commands {
     Plasma(PlasmaArgs),
 }
 
+#[doc(hidden)]
 #[derive(Args)]
 #[command(about = "Plasma effect configuration")]
 struct PlasmaArgs {

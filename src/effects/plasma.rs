@@ -1,23 +1,57 @@
+//! A classic plasma demo effect with various shape patterns and color palettes
+//!
+//! This module implements a configurable plasma effect that can render different
+//! patterns including ripples, spirals, circles, squares, and checkerboards.
+//! Each pattern can be displayed using different color palettes such as rainbow,
+//! hot colors, or cool colors.
+//!
+//! # Example
+//!
+//! ```
+//! use demo_effects::effects::plasma::{Config, Shape, Palette};
+//!
+//! let plasma = Config::new(
+//!     800,    // width
+//!     600,    // height
+//!     Shape::Ripple,
+//!     Palette::Rainbow
+//! );
+//!
+//! plasma.draw(&mut buffer, time);
+//! ```
 use crate::common::{hsv_to_rgb, DemoBase, DemoEffect};
 use clap::ValueEnum;
 
+/// Defines the available shape patterns for the plasma effect
 #[derive(Debug, PartialEq, Clone, ValueEnum)]
 pub enum Shape {
+    /// Creates concentric wave patterns that ripple outward from the center,
+    /// producing a water-like effect
     Ripple,
+    /// Generates rotating spiral patterns that create a hypnotic swirling effect
     Spiral,
+    /// Renders circular patterns that expand and contract from multiple center points
     Circle,
+    /// Produces geometric patterns based on square shapes with hard edges
     Square,
+    /// Creates an alternating pattern of squares resembling a chess board
     Checkerboard,
 }
 
+/// Available color palettes for rendering the plasma effect
 #[derive(Debug, PartialEq, Clone, ValueEnum)]
 pub enum Palette {
+    /// Full spectrum color cycling through all hues of the rainbow
     Rainbow,
+    /// Cool colors focusing on blues and cyans, creating a calm, oceanic feel
     BlueCyan,
+    /// Warm colors using reds, oranges and yellows, resembling fire or heat
     Hot,
+    /// Vibrant colors cycling through purples, magentas and pinks
     PurplePink,
 }
 
+/// Configuration for the plasma effect
 pub struct Config {
     base: DemoBase,
     plasma_type: Shape,
