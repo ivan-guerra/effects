@@ -1,37 +1,90 @@
 use crate::common::DemoEffect;
 use crate::effects::plasma;
+use clap::{Args, Parser, Subcommand};
 use minifb::{Window, WindowOptions};
 use std::time::Instant;
 
 mod common;
 mod effects;
 
-const WIDTH: usize = 1366;
-const HEIGHT: usize = 768;
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+#[command(propagate_version = true)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
 
-fn run(demo_effect: Box<dyn DemoEffect>) -> Result<(), Box<dyn std::error::Error>> {
-    let mut window = Window::new("Demo Effect", WIDTH, HEIGHT, WindowOptions::default())?;
+    #[arg(short, long, default_value_t = 1366, help = "Screen width in pixels")]
+    width: usize,
+
+    #[arg(short, long, default_value_t = 768, help = "Screen height in pixels")]
+    height: usize,
+}
+
+#[derive(Subcommand)]
+enum Commands {
+    Plasma(PlasmaArgs),
+}
+
+#[derive(Args)]
+#[command(about = "Plasma effect configuration")]
+struct PlasmaArgs {
+    #[arg(
+        short,
+        long,
+        value_enum,
+        default_value_t = plasma::Shape::Ripple,
+        help = "Plasma shape"
+    )]
+    shape: plasma::Shape,
+
+    #[arg(
+        short,
+        long,
+        value_enum,
+        default_value_t = plasma::Palette::Rainbow,
+        help = "Plasma color palette"
+    )]
+    palette: plasma::Palette,
+}
+
+#[doc(hidden)]
+fn run(
+    demo_effect: Box<dyn DemoEffect>,
+    width: usize,
+    height: usize,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut window = Window::new("Demo Effect", width, height, WindowOptions::default())?;
 
     let start_time = Instant::now();
-    let mut buffer = vec![0; WIDTH * HEIGHT];
+    let mut buffer = vec![0; width * height];
 
     while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
         let time = start_time.elapsed().as_secs_f32();
         demo_effect.draw(&mut buffer, time);
-        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+        window.update_with_buffer(&buffer, width, height).unwrap();
     }
     Ok(())
 }
 
-fn main() {
-    let plasma_effect = Box::new(plasma::Config::new(
-        WIDTH,
-        HEIGHT,
-        plasma::Shape::Ripple,
-        plasma::Palette::Rainbow,
-    ));
+#[doc(hidden)]
+fn create_effect(args: &Cli) -> Box<dyn DemoEffect> {
+    match &args.command {
+        Commands::Plasma(plasma_args) => Box::new(plasma::Config::new(
+            args.width,
+            args.height,
+            plasma_args.shape.clone(),
+            plasma_args.palette.clone(),
+        )),
+    }
+}
 
-    if let Err(e) = run(plasma_effect) {
+#[doc(hidden)]
+fn main() {
+    let args = Cli::parse();
+    let demo_effect = create_effect(&args);
+
+    if let Err(e) = run(demo_effect, args.width, args.height) {
         eprintln!("error: {}", e);
         std::process::exit(1);
     }

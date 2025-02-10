@@ -1,5 +1,7 @@
 use crate::common::{hsv_to_rgb, DemoBase, DemoEffect};
+use clap::ValueEnum;
 
+#[derive(Debug, PartialEq, Clone, ValueEnum)]
 pub enum Shape {
     Ripple,
     Spiral,
@@ -8,6 +10,7 @@ pub enum Shape {
     Checkerboard,
 }
 
+#[derive(Debug, PartialEq, Clone, ValueEnum)]
 pub enum Palette {
     Rainbow,
     BlueCyan,
