@@ -95,11 +95,16 @@ impl Plasma {
     ///
     /// A tuple of (red, green, blue) values as 8-bit unsigned integers [0, 255]
     fn hsv_to_rgb(&self, h: f32, s: f32, v: f32) -> (u8, u8, u8) {
-        let h = h % 360.0; // Hue angle normalized to [0, 360) degrees
-        let c = v * s; // Chroma: color intensity based on saturation and value
-        let h_prime = h / 60.0; // Hue sector (divides color wheel into 6 sectors of 60° each)
-        let x = c * (1.0 - ((h_prime % 2.0) - 1.0).abs()); // Secondary chroma component for color mixing
-        let m = v - c; // Lightness adjustment to match value parameter
+        // Normalize hue to [0,360) degree range
+        let h = h % 360.0;
+        // Calculate chroma (color intensity) from value and saturation
+        let c = v * s;
+        // Convert hue to sector position (60° per sector)
+        let h_prime = h / 60.0;
+        // Calculate intermediate value for RGB conversion based on hue position
+        let x = c * (1.0 - ((h_prime % 2.0) - 1.0).abs());
+        // Calculate value adjustment to maintain brightness level
+        let m = v - c;
 
         let (r, g, b) = match h_prime as u8 {
             0 => (c, x, 0.0), // Red to Yellow: R constant, G increasing
@@ -118,23 +123,39 @@ impl Plasma {
         )
     }
 
+    /// Renders the plasma effect into the provided pixel buffer.
+    ///
+    /// # Arguments
+    /// * `buffer` - Mutable slice of u32 values representing the pixel buffer
+    /// * `time` - Current time value in seconds, used for animation
+    ///
+    /// Each pixel in the buffer is updated with a color value based on the current
+    /// shape, palette, and time parameters. The color values are packed into 32-bit
+    /// ARGB format.
     pub fn draw(&self, buffer: &mut [u32], time: f32) {
         let w = self.width as f32;
         let h = self.height as f32;
+        // Calculate the center coordinates of the display area
         let center_x = w * 0.5;
         let center_y = h * 0.5;
+        // Calculate half of the smallest dimension for scaling patterns
         let min_dim = w.min(h) * 0.5;
+        // Create alpha channel mask for ARGB color format (fully opaque)
         let alpha = 255 << 24;
 
         buffer
             .chunks_exact_mut(self.width)
             .enumerate()
             .for_each(|(y, row)| {
+                // Calculate the y-coordinate relative to the center of the display
                 let py = y as f32 - center_y;
 
                 row.iter_mut().enumerate().for_each(|(x, pixel)| {
+                    // Calculate the x-coordinate relative to the center of the display
                     let px = x as f32 - center_x;
+                    // Calculate the normalized distance from the center point
                     let dist = (px * px + py * py).sqrt() / min_dim;
+                    // Calculate the angle in radians from the center point
                     let angle = py.atan2(px);
 
                     let v = match self.shape {
@@ -144,6 +165,7 @@ impl Plasma {
                         Shape::Square => self.square(px, py, min_dim, time),
                         Shape::Checkerboard => self.checkerboard(px, py, min_dim, time),
                     };
+                    // Normalize the plasma value from [-1,1] to [0,1] range for color mapping
                     let v = v * 0.5 + 0.5;
 
                     let (r, g, b) = match self.palette {
