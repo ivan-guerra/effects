@@ -56,6 +56,33 @@ impl Plasma {
         }
     }
 
+    fn ripple(&self, dist: f32, time: f32) -> f32 {
+        // Ripple pattern: sin(dist * 10.0 - time * 2.0)
+        (dist * 10.0 - time * 2.0).sin()
+    }
+
+    fn spiral(&self, dist: f32, time: f32, angle: f32) -> f32 {
+        // Spiral pattern: sin(dist * 10.0 + angle * 3.0 + time)
+        (dist * 10.0 + angle * 3.0 + time).sin()
+    }
+
+    fn circle(&self, dist: f32, time: f32, angle: f32) -> f32 {
+        // Circle pattern: sin(dist * 10.0 + time) + sin(angle * 2.0 + time)
+        (dist * 10.0 + time).sin() + (angle * 2.0 + time).sin()
+    }
+
+    fn square(&self, px: f32, py: f32, min_dim: f32, time: f32) -> f32 {
+        // Square pattern: sin(px / min_dim * 10.0 + time) * sin(py / min_dim * 10.0 + time)
+        ((px / min_dim) * 10.0 + time).sin() * ((py / min_dim) * 10.0 + time).sin()
+    }
+
+    fn checkerboard(&self, px: f32, py: f32, min_dim: f32, time: f32) -> f32 {
+        // Checkerboard pattern: sin(px / min_dim * 10.0) * sin(py / min_dim * 10.0)
+        //                       + sin((px / min_dim + time) * 5.0) * sin((py / min_dim + time) * 5.0)
+        ((px / min_dim) * 10.0).sin() * ((py / min_dim) * 10.0).sin()
+            + ((px / min_dim + time) * 5.0).sin() * ((py / min_dim + time) * 5.0).sin()
+    }
+
     pub fn draw(&self, buffer: &mut [u32], time: f32) {
         let w = self.width as f32;
         let h = self.height as f32;
@@ -76,18 +103,11 @@ impl Plasma {
                     let angle = py.atan2(px);
 
                     let v = match self.shape {
-                        Shape::Ripple => (dist * 10.0 - time * 2.0).sin(),
-                        Shape::Spiral => (dist * 10.0 + angle * 3.0 + time).sin(),
-                        Shape::Circle => (dist * 10.0 + time).sin() + (angle * 2.0 + time).sin(),
-                        Shape::Square => {
-                            ((px / min_dim) * 10.0 + time).sin()
-                                * ((py / min_dim) * 10.0 + time).sin()
-                        }
-                        Shape::Checkerboard => {
-                            ((px / min_dim) * 10.0).sin() * ((py / min_dim) * 10.0).sin()
-                                + ((px / min_dim + time) * 5.0).sin()
-                                    * ((py / min_dim + time) * 5.0).sin()
-                        }
+                        Shape::Ripple => self.ripple(dist, time),
+                        Shape::Spiral => self.spiral(dist, time, angle),
+                        Shape::Circle => self.circle(dist, time, angle),
+                        Shape::Square => self.square(px, py, min_dim, time),
+                        Shape::Checkerboard => self.checkerboard(px, py, min_dim, time),
                     };
                     let v = v * 0.5 + 0.5;
 
