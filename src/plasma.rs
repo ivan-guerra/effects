@@ -22,7 +22,6 @@ pub enum Shape {
     Spiral,
     Circle,
     Square,
-    Checkerboard,
 }
 
 /// Available color palettes for rendering the plasma effect
@@ -87,19 +86,17 @@ impl Plasma {
             Shape::Ripple => Shape::Spiral,
             Shape::Spiral => Shape::Circle,
             Shape::Circle => Shape::Square,
-            Shape::Square => Shape::Checkerboard,
-            Shape::Checkerboard => Shape::Ripple,
+            Shape::Square => Shape::Ripple,
         };
     }
 
     /// Cycles to the previous shape pattern in the sequence.
     pub fn prev_shape(&mut self) {
         self.shape = match self.shape {
-            Shape::Ripple => Shape::Checkerboard,
+            Shape::Ripple => Shape::Square,
             Shape::Spiral => Shape::Ripple,
             Shape::Circle => Shape::Spiral,
             Shape::Square => Shape::Circle,
-            Shape::Checkerboard => Shape::Square,
         };
     }
 
@@ -121,14 +118,6 @@ impl Plasma {
     fn square(&self, px: f32, py: f32, min_dim: f32, time: f32) -> f32 {
         // Square pattern: sin(px / min_dim * 10.0 + time) * sin(py / min_dim * 10.0 + time)
         ((px / min_dim) * self.scale + time).sin() * ((py / min_dim) * self.scale + time).sin()
-    }
-
-    fn checkerboard(&self, px: f32, py: f32, min_dim: f32, time: f32) -> f32 {
-        // Checkerboard pattern: sin(px / min_dim * 10.0) * sin(py / min_dim * 10.0)
-        //                       + sin((px / min_dim + time) * 5.0) * sin((py / min_dim + time) * 5.0)
-        let scaled_x = (px / min_dim) * self.scale;
-        let scaled_y = (py / min_dim) * self.scale;
-        (scaled_x + time).sin() * (scaled_y + time).sin()
     }
 
     /// Converts HSV (Hue, Saturation, Value) color values to RGB (Red, Green, Blue)
@@ -211,7 +200,6 @@ impl Plasma {
                         Shape::Spiral => self.spiral(dist, time, angle),
                         Shape::Circle => self.circle(dist, time, angle),
                         Shape::Square => self.square(px, py, min_dim, time),
-                        Shape::Checkerboard => self.checkerboard(px, py, min_dim, time),
                     };
                     // Normalize the plasma value from [-1,1] to [0,1] range for color mapping
                     let v = v * 0.5 + 0.5;
