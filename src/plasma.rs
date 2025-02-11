@@ -45,43 +45,47 @@ pub struct Plasma {
     shape: Shape,
     /// Color palette used for rendering the plasma effect
     palette: Palette,
+    /// Scale factor that controls the density/size of the plasma patterns
+    scale: f32,
 }
 
 impl Plasma {
-    pub fn new(width: usize, height: usize, shape: Shape, palette: Palette) -> Self {
+    pub fn new(width: usize, height: usize, shape: Shape, palette: Palette, scale: f32) -> Self {
         Self {
             width,
             height,
             shape,
             palette,
+            scale,
         }
     }
 
     fn ripple(&self, dist: f32, time: f32) -> f32 {
         // Ripple pattern: sin(dist * 10.0 - time * 2.0)
-        (dist * 10.0 - time * 2.0).sin()
+        (dist * self.scale - time * 2.0).sin()
     }
 
     fn spiral(&self, dist: f32, time: f32, angle: f32) -> f32 {
         // Spiral pattern: sin(dist * 10.0 + angle * 3.0 + time)
-        (dist * 10.0 + angle * 3.0 + time).sin()
+        (dist * self.scale + angle * 3.0 + time).sin()
     }
 
     fn circle(&self, dist: f32, time: f32, angle: f32) -> f32 {
         // Circle pattern: sin(dist * 10.0 + time) + sin(angle * 2.0 + time)
-        (dist * 10.0 + time).sin() + (angle * 2.0 + time).sin()
+        (dist * self.scale + time).sin() + (angle * 2.0 + time).sin()
     }
 
     fn square(&self, px: f32, py: f32, min_dim: f32, time: f32) -> f32 {
         // Square pattern: sin(px / min_dim * 10.0 + time) * sin(py / min_dim * 10.0 + time)
-        ((px / min_dim) * 10.0 + time).sin() * ((py / min_dim) * 10.0 + time).sin()
+        ((px / min_dim) * self.scale + time).sin() * ((py / min_dim) * self.scale + time).sin()
     }
 
     fn checkerboard(&self, px: f32, py: f32, min_dim: f32, time: f32) -> f32 {
         // Checkerboard pattern: sin(px / min_dim * 10.0) * sin(py / min_dim * 10.0)
         //                       + sin((px / min_dim + time) * 5.0) * sin((py / min_dim + time) * 5.0)
-        ((px / min_dim) * 10.0).sin() * ((py / min_dim) * 10.0).sin()
-            + ((px / min_dim + time) * 5.0).sin() * ((py / min_dim + time) * 5.0).sin()
+        let scaled_x = (px / min_dim) * self.scale;
+        let scaled_y = (py / min_dim) * self.scale;
+        (scaled_x + time).sin() * (scaled_y + time).sin()
     }
 
     /// Converts HSV (Hue, Saturation, Value) color values to RGB (Red, Green, Blue)

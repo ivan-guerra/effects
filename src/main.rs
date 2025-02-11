@@ -51,6 +51,14 @@ struct PlasmaArgs {
         help = "Plasma color palette"
     )]
     palette: plasma::Palette,
+
+    #[arg(
+        short = 'x',
+        long,
+        default_value_t = 10.0,
+        help = "Scale factor that controls the density/size of the plasma patterns"
+    )]
+    scale: f32,
 }
 
 #[doc(hidden)]
@@ -71,7 +79,13 @@ fn run(plasma: Plasma, width: usize, height: usize) -> Result<(), Box<dyn std::e
 #[doc(hidden)]
 fn main() {
     let args = PlasmaArgs::parse();
-    let plasma = plasma::Plasma::new(args.width, args.height, args.shape, args.palette);
+    let plasma = plasma::Plasma::new(
+        args.width,
+        args.height,
+        args.shape,
+        args.palette,
+        args.scale,
+    );
 
     if let Err(e) = run(plasma, args.width, args.height) {
         eprintln!("error: {}", e);
