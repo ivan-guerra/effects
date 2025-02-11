@@ -1,25 +1,26 @@
-//! A command-line application that displays animated plasma effects in a window.
+//! A graphical plasma effect visualizer with interactive controls.
 //!
-//! This program creates a window that shows colorful, animated plasma patterns
-//! using various geometric shapes and color palettes. The display can be
-//! configured using command-line arguments to specify window dimensions,
-//! pattern shapes, and color schemes.
+//! This program generates animated plasma patterns in a window with real-time controls
+//! for adjusting the visualization parameters.
 //!
-//! # Usage
-//! ```bash
-//! plasma [OPTIONS]
+//! # Controls
+//! - `Space`: Cycle through color palettes
+//! - `Left/Right`: Change pattern shape
+//! - `Up/Down`: Adjust pattern scale
+//! - `Escape/Q`: Exit program
 //!
+//! # Command Line Arguments
+//! ```text
 //! Options:
-//!   -w, --width <WIDTH>    Screen width in pixels [default: 1366]
-//!   -h, --height <HEIGHT>  Screen height in pixels [default: 768]
-//!   -s, --shape <SHAPE>    Plasma shape [default: ripple]
-//!   -p, --palette <PALETTE>  Plasma color palette [default: rainbow]
+//!   -w, --width <WIDTH>      Screen width in pixels [default: 1366]
+//!   -h, --height <HEIGHT>    Screen height in pixels [default: 768]
+//!   -s, --shape <SHAPE>      Initial plasma shape [default: ripple]
+//!   -p, --palette <PALETTE>  Initial color palette [default: rainbow]
+//!   -x, --scale <SCALE>      Pattern scale factor [default: 10.0]
 //! ```
-//!
-//! The program will run until the Escape key is pressed or the window is closed.
 use crate::plasma::Plasma;
 use clap::Parser;
-use minifb::{Window, WindowOptions};
+use minifb::{Key, Window, WindowOptions};
 use std::time::Instant;
 
 mod plasma;
@@ -62,16 +63,41 @@ struct PlasmaArgs {
 }
 
 #[doc(hidden)]
-fn run(plasma: Plasma, width: usize, height: usize) -> Result<(), Box<dyn std::error::Error>> {
-    let mut window = Window::new("Demo Effect", width, height, WindowOptions::default())?;
+fn run(mut plasma: Plasma, width: usize, height: usize) -> Result<(), Box<dyn std::error::Error>> {
+    let mut window = Window::new("Plasma", width, height, WindowOptions::default())?;
 
     let start_time = Instant::now();
+    let mut last_key_time = Instant::now();
     let mut buffer = vec![0; width * height];
 
-    while window.is_open() && !window.is_key_down(minifb::Key::Escape) {
+    // Minimum time (in seconds) between key presses
+    // Oddly, the minifb functions set_key_repeat() and set_key_delay() don't work as expected so
+    // we resorted to manual key delay handling.
+    const KEY_DELAY: f32 = 0.15;
+
+    while window.is_open() {
+        let current_time = Instant::now();
+        let key_elapsed = current_time.duration_since(last_key_time).as_secs_f32();
+
+        if key_elapsed >= KEY_DELAY {
+            if let Some(key) = window.get_keys().first() {
+                match key {
+                    Key::Escape => std::process::exit(0),
+                    Key::Q => std::process::exit(0),
+                    Key::Space => plasma.next_palette(),
+                    Key::Up => plasma.decrease_scale(),
+                    Key::Down => plasma.increase_scale(),
+                    Key::Left => plasma.prev_shape(),
+                    Key::Right => plasma.next_shape(),
+                    _ => {}
+                }
+                last_key_time = current_time;
+            }
+        }
+
         let time = start_time.elapsed().as_secs_f32();
         plasma.draw(&mut buffer, time);
-        window.update_with_buffer(&buffer, width, height).unwrap();
+        window.update_with_buffer(&buffer, width, height)?;
     }
     Ok(())
 }

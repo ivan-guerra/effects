@@ -60,6 +60,49 @@ impl Plasma {
         }
     }
 
+    /// Increases the scale factor of the plasma patterns by 1.0.
+    pub fn increase_scale(&mut self) {
+        self.scale += 10.0;
+    }
+
+    /// Decreases the scale factor of the plasma patterns by 1.0.
+    pub fn decrease_scale(&mut self) {
+        self.scale -= 10.0;
+    }
+
+    /// Cycles to the next color palette in the sequence.
+    pub fn next_palette(&mut self) {
+        self.palette = match self.palette {
+            Palette::Rainbow => Palette::BlueCyan,
+            Palette::BlueCyan => Palette::Hot,
+            Palette::Hot => Palette::PurplePink,
+            Palette::PurplePink => Palette::BlackWhite,
+            Palette::BlackWhite => Palette::Rainbow,
+        };
+    }
+
+    /// Cycles to the next shape pattern in the sequence.
+    pub fn next_shape(&mut self) {
+        self.shape = match self.shape {
+            Shape::Ripple => Shape::Spiral,
+            Shape::Spiral => Shape::Circle,
+            Shape::Circle => Shape::Square,
+            Shape::Square => Shape::Checkerboard,
+            Shape::Checkerboard => Shape::Ripple,
+        };
+    }
+
+    /// Cycles to the previous shape pattern in the sequence.
+    pub fn prev_shape(&mut self) {
+        self.shape = match self.shape {
+            Shape::Ripple => Shape::Checkerboard,
+            Shape::Spiral => Shape::Ripple,
+            Shape::Circle => Shape::Spiral,
+            Shape::Square => Shape::Circle,
+            Shape::Checkerboard => Shape::Square,
+        };
+    }
+
     fn ripple(&self, dist: f32, time: f32) -> f32 {
         // Ripple pattern: sin(dist * 10.0 - time * 2.0)
         (dist * self.scale - time * 2.0).sin()
