@@ -32,6 +32,7 @@ pub enum Palette {
     BlueCyan,
     Hot,
     PurplePink,
+    BlackWhite,
 }
 
 /// A plasma effect generator that creates colorful animated patterns
@@ -173,6 +174,10 @@ impl Plasma {
                         Palette::BlueCyan => self.hsv_to_rgb(v * 120.0 + 180.0, 0.8, 1.0),
                         Palette::Hot => self.hsv_to_rgb(v * 60.0, 1.0, 1.0),
                         Palette::PurplePink => self.hsv_to_rgb(v * 60.0 + 270.0, 0.7, 1.0),
+                        Palette::BlackWhite => {
+                            let gray = (v * 255.0) as u8;
+                            (gray, gray, gray)
+                        }
                     };
                     *pixel = alpha | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32);
                 });
