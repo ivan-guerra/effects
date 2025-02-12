@@ -12,8 +12,8 @@
 //! # Command Line Arguments
 //! ```text
 //! Options:
-//!   -w, --width <WIDTH>      Screen width in pixels [default: 1366]
-//!   -h, --height <HEIGHT>    Screen height in pixels [default: 768]
+//!   -w, --width <WIDTH>      Screen width in pixels [default: 512]
+//!   -h, --height <HEIGHT>    Screen height in pixels [default: 512]
 //!   -s, --shape <SHAPE>      Initial plasma shape [default: ripple]
 //!   -p, --palette <PALETTE>  Initial color palette [default: rainbow]
 //!   -x, --scale <SCALE>      Pattern scale factor [default: 10.0]
@@ -29,10 +29,10 @@ mod plasma;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct PlasmaArgs {
-    #[arg(short, long, default_value_t = 1366, help = "Screen width in pixels")]
+    #[arg(short, long, default_value_t = 512, help = "Screen width in pixels")]
     width: usize,
 
-    #[arg(short, long, default_value_t = 768, help = "Screen height in pixels")]
+    #[arg(short, long, default_value_t = 512, help = "Screen height in pixels")]
     height: usize,
 
     #[arg(
