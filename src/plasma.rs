@@ -15,6 +15,9 @@
 //! ```
 use clap::ValueEnum;
 
+/// Scale factor change for increasing or decreasing the plasma pattern density
+const SCALE_DELTA: f32 = 10.0;
+
 /// Defines the available shape patterns for the plasma effect
 #[derive(Debug, PartialEq, Clone, ValueEnum)]
 pub enum Shape {
@@ -59,14 +62,14 @@ impl Plasma {
         }
     }
 
-    /// Increases the scale factor of the plasma patterns by 1.0.
+    /// Increases the scale factor of the plasma patterns by SCALE_DELTA.
     pub fn increase_scale(&mut self) {
-        self.scale += 10.0;
+        self.scale += SCALE_DELTA;
     }
 
-    /// Decreases the scale factor of the plasma patterns by 1.0.
+    /// Decreases the scale factor of the plasma patterns by SCALE_DELTA.
     pub fn decrease_scale(&mut self) {
-        self.scale -= 10.0;
+        self.scale -= SCALE_DELTA;
     }
 
     /// Cycles to the next color palette in the sequence.
@@ -133,7 +136,7 @@ impl Plasma {
     /// A tuple of (red, green, blue) values as 8-bit unsigned integers [0, 255]
     fn hsv_to_rgb(&self, h: f32, s: f32, v: f32) -> (u8, u8, u8) {
         // Normalize hue to [0,360) degree range
-        let h = h % 360.0;
+        let h = ((h % 360.0) + 360.0) % 360.0;
         // Calculate chroma (color intensity) from value and saturation
         let c = v * s;
         // Convert hue to sector position (60° per sector)
@@ -217,5 +220,232 @@ impl Plasma {
                     *pixel = alpha | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32);
                 });
             });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn create_plasma() -> Plasma {
+        Plasma::new(800, 600, Shape::Ripple, Palette::Rainbow, 0.0)
+    }
+
+    #[test]
+    fn scale_increases_by_scale_delta_when_increased() {
+        let mut plasma = create_plasma();
+        let initial_scale = plasma.scale;
+        plasma.increase_scale();
+        assert_eq!(plasma.scale, initial_scale + SCALE_DELTA);
+    }
+
+    #[test]
+    fn scale_decreases_by_scale_delta_when_decreased() {
+        let mut plasma = create_plasma();
+        let initial_scale = plasma.scale;
+        plasma.decrease_scale();
+        assert_eq!(plasma.scale, initial_scale - SCALE_DELTA);
+    }
+
+    #[test]
+    fn shape_cycles_forward_through_all_variants() {
+        let mut plasma = create_plasma();
+
+        assert_eq!(plasma.shape, Shape::Ripple);
+        plasma.next_shape();
+        assert_eq!(plasma.shape, Shape::Spiral);
+        plasma.next_shape();
+        assert_eq!(plasma.shape, Shape::Circle);
+        plasma.next_shape();
+        assert_eq!(plasma.shape, Shape::Square);
+        plasma.next_shape();
+        assert_eq!(plasma.shape, Shape::Ripple);
+    }
+
+    #[test]
+    fn shape_cycles_backward_through_all_variants() {
+        let mut plasma = create_plasma();
+
+        assert_eq!(plasma.shape, Shape::Ripple);
+        plasma.prev_shape();
+        assert_eq!(plasma.shape, Shape::Square);
+        plasma.prev_shape();
+        assert_eq!(plasma.shape, Shape::Circle);
+        plasma.prev_shape();
+        assert_eq!(plasma.shape, Shape::Spiral);
+        plasma.prev_shape();
+        assert_eq!(plasma.shape, Shape::Ripple);
+    }
+
+    #[test]
+    fn shape_returns_to_initial_after_complete_cycle_in_both_directions() {
+        let mut plasma = create_plasma();
+        let initial_shape = plasma.shape.clone();
+
+        // Do a full cycle with next_shape
+        for _ in 0..4 {
+            plasma.next_shape();
+        }
+        assert_eq!(
+            plasma.shape, initial_shape,
+            "Shape should return to initial after full next cycle"
+        );
+
+        // Do a full cycle with prev_shape
+        for _ in 0..4 {
+            plasma.prev_shape();
+        }
+        assert_eq!(
+            plasma.shape, initial_shape,
+            "Shape should return to initial after full prev cycle"
+        );
+    }
+
+    #[test]
+    fn palette_cycles_through_all_variants() {
+        let mut plasma = create_plasma();
+
+        assert_eq!(plasma.palette, Palette::Rainbow);
+        plasma.next_palette();
+        assert_eq!(plasma.palette, Palette::BlueCyan);
+        plasma.next_palette();
+        assert_eq!(plasma.palette, Palette::Hot);
+        plasma.next_palette();
+        assert_eq!(plasma.palette, Palette::PurplePink);
+        plasma.next_palette();
+        assert_eq!(plasma.palette, Palette::BlackWhite);
+        plasma.next_palette();
+        assert_eq!(plasma.palette, Palette::Rainbow);
+    }
+
+    #[test]
+    fn palette_returns_to_initial_after_complete_cycle() {
+        let mut plasma = create_plasma();
+        let initial_palette = plasma.palette.clone();
+
+        // Do a full cycle
+        for _ in 0..5 {
+            plasma.next_palette();
+        }
+
+        assert_eq!(
+            plasma.palette, initial_palette,
+            "Palette should return to initial after full cycle"
+        );
+    }
+
+    #[test]
+    fn each_palette_transition_changes_to_different_variant() {
+        let mut plasma = create_plasma();
+        let mut previous_palette = plasma.palette.clone();
+
+        for _ in 0..5 {
+            plasma.next_palette();
+            assert_ne!(
+                plasma.palette, previous_palette,
+                "Each palette transition should result in a different variant"
+            );
+            previous_palette = plasma.palette.clone();
+        }
+    }
+
+    #[test]
+    fn hsv_to_rgb_converts_primary_colors_correctly() {
+        let plasma = create_plasma();
+
+        // Red (0° hue)
+        let (r, g, b) = plasma.hsv_to_rgb(0.0, 1.0, 1.0);
+        assert_eq!((r, g, b), (255, 0, 0), "Pure red should be (255, 0, 0)");
+
+        // Green (120° hue)
+        let (r, g, b) = plasma.hsv_to_rgb(120.0, 1.0, 1.0);
+        assert_eq!((r, g, b), (0, 255, 0), "Pure green should be (0, 255, 0)");
+
+        // Blue (240° hue)
+        let (r, g, b) = plasma.hsv_to_rgb(240.0, 1.0, 1.0);
+        assert_eq!((r, g, b), (0, 0, 255), "Pure blue should be (0, 0, 0)");
+    }
+
+    #[test]
+    fn hsv_to_rgb_converts_secondary_colors_correctly() {
+        let plasma = create_plasma();
+
+        // Yellow (60° hue)
+        let (r, g, b) = plasma.hsv_to_rgb(60.0, 1.0, 1.0);
+        assert_eq!((r, g, b), (255, 255, 0), "Yellow should be (255, 255, 0)");
+
+        // Cyan (180° hue)
+        let (r, g, b) = plasma.hsv_to_rgb(180.0, 1.0, 1.0);
+        assert_eq!((r, g, b), (0, 255, 255), "Cyan should be (0, 255, 255)");
+
+        // Magenta (300° hue)
+        let (r, g, b) = plasma.hsv_to_rgb(300.0, 1.0, 1.0);
+        assert_eq!((r, g, b), (255, 0, 255), "Magenta should be (255, 0, 255)");
+    }
+
+    #[test]
+    fn hsv_to_rgb_handles_grayscale_correctly() {
+        let plasma = create_plasma();
+
+        // Black (V = 0)
+        let (r, g, b) = plasma.hsv_to_rgb(0.0, 0.0, 0.0);
+        assert_eq!((r, g, b), (0, 0, 0), "Black should be (0, 0, 0)");
+
+        // White (V = 1, S = 0)
+        let (r, g, b) = plasma.hsv_to_rgb(0.0, 0.0, 1.0);
+        assert_eq!(
+            (r, g, b),
+            (255, 255, 255),
+            "White should be (255, 255, 255)"
+        );
+
+        // 50% Gray (V = 0.5, S = 0)
+        let (r, g, b) = plasma.hsv_to_rgb(0.0, 0.0, 0.5);
+        assert_eq!(
+            (r, g, b),
+            (128, 128, 128),
+            "50% gray should be (128, 128, 128)"
+        );
+    }
+
+    #[test]
+    fn hsv_to_rgb_handles_hue_wrapping() {
+        let plasma = create_plasma();
+
+        // Test that 360° wraps to 0°
+        let color1 = plasma.hsv_to_rgb(0.0, 1.0, 1.0);
+        let color2 = plasma.hsv_to_rgb(360.0, 1.0, 1.0);
+        assert_eq!(color1, color2, "0° and 360° hue should produce same color");
+
+        // Test that negative hues work correctly
+        let color3 = plasma.hsv_to_rgb(-120.0, 1.0, 1.0);
+        let color4 = plasma.hsv_to_rgb(240.0, 1.0, 1.0);
+        assert_eq!(
+            color3, color4,
+            "-120° and 240° hue should produce same color"
+        );
+    }
+
+    #[test]
+    fn hsv_to_rgb_handles_saturation_correctly() {
+        let plasma = create_plasma();
+        let hue = 0.0; // Red
+        let value = 1.0;
+
+        // Full saturation
+        let (r1, g1, b1) = plasma.hsv_to_rgb(hue, 1.0, value);
+        assert_eq!((r1, g1, b1), (255, 0, 0), "Full saturation red");
+
+        // Half saturation
+        let (r2, g2, b2) = plasma.hsv_to_rgb(hue, 0.5, value);
+        assert_eq!((r2, g2, b2), (255, 128, 128), "Half saturation red");
+
+        // Zero saturation (should be white at full value)
+        let (r3, g3, b3) = plasma.hsv_to_rgb(hue, 0.0, value);
+        assert_eq!(
+            (r3, g3, b3),
+            (255, 255, 255),
+            "Zero saturation at full value"
+        );
     }
 }
